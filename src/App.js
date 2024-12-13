@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
 
 const App = () => {
   const [habits, setHabits] = useState([]);
@@ -9,51 +10,61 @@ const App = () => {
 
   const categories = ["Work", "Health", "Fitness", "Personal", "Other"];
 
+  // Load habits from localStorage on component mount
   useEffect(() => {
-    const storedHabits = JSON.parse(localStorage.getItem("habits"));
-    if (storedHabits) {
+    try {
+      const storedHabits = JSON.parse(localStorage.getItem("habits")) || [];
+      console.log("Loaded habits from localStorage:", storedHabits);
       setHabits(storedHabits);
+    } catch (error) {
+      console.error("Failed to load habits from localStorage:", error);
+      setHabits([]);
     }
   }, []);
 
   useEffect(() => {
-    if (habits.length > 0) {
+    try {
+      console.log("Saving habits to localStorage:", habits);
       localStorage.setItem("habits", JSON.stringify(habits));
+    } catch (error) {
+      console.error("Failed to save habits to localStorage:", error);
     }
   }, [habits]);
 
   const handleAddHabit = () => {
     if (input.trim() === "") return;
     const newHabit = {
+      id: uuidv4(),
       name: input,
       completed: false,
       category: selectedCategory,
     };
     setHabits((prevHabits) => [...prevHabits, newHabit]);
-    setInput("");
+    setInput(""); // Clear input field
   };
 
-  const toggleCompletion = (index) => {
+  const toggleCompletion = (id) => {
     setHabits((prevHabits) =>
-      prevHabits.map((habit, i) =>
-        i === index ? { ...habit, completed: !habit.completed } : habit
+      prevHabits.map((habit) =>
+        habit.id === id ? { ...habit, completed: !habit.completed } : habit
       )
     );
   };
 
-  const handleDelete = (indexToRemove) => {
-    setHabits((prevHabits) => prevHabits.filter((_, index) => index !== indexToRemove));
+  const handleDelete = (id) => {
+    setHabits((prevHabits) => prevHabits.filter((habit) => habit.id !== id));
   };
 
-  const handleEdit = (index) => {
-    setEditIndex(index);
-    setEditInput(habits[index].name);
+  const handleEdit = (id) => {
+    setEditIndex(id);
+    const habitToEdit = habits.find((habit) => habit.id === id);
+    setEditInput(habitToEdit.name);
   };
 
   const saveEdit = () => {
     setHabits((prevHabits) =>
-      prevHabits.map((habit, index) =>
-        index === editIndex ? { ...habit, name: editInput } : habit
+      prevHabits.map((habit) =>
+        habit.id === editIndex ? { ...habit, name: editInput } : habit
       )
     );
     setEditIndex(null);
@@ -71,7 +82,6 @@ const App = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4">
       <h1 className="text-3xl font-bold mb-4">Habit Tracker</h1>
-
       <div className="mb-4">
         <input
           type="text"
@@ -98,20 +108,21 @@ const App = () => {
           Add Habit
         </button>
       </div>
-
       <div className="w-full max-w-md">
         {Object.keys(groupedHabits).map((category) => (
           <div key={category} className="mb-6">
             <h2 className="text-xl font-semibold mb-2">{category}</h2>
             <ul>
-              {groupedHabits[category].map((habit, index) => (
+              {groupedHabits[category].map((habit) => (
                 <li
-                  key={index}
+                  key={habit.id}
                   className={`p-2 rounded border border-gray-200 flex justify-between items-center mb-2 ${
-                    habit.completed ? "bg-green-100 line-through" : "bg-gray-100"
+                    habit.completed
+                      ? "bg-green-100 line-through"
+                      : "bg-gray-100"
                   }`}
                 >
-                  {editIndex === index ? (
+                  {editIndex === habit.id ? (
                     <input
                       type="text"
                       value={editInput}
@@ -120,14 +131,14 @@ const App = () => {
                     />
                   ) : (
                     <span
-                      onClick={() => toggleCompletion(index)}
+                      onClick={() => toggleCompletion(habit.id)}
                       className="cursor-pointer"
                     >
                       {habit.name}
                     </span>
                   )}
                   <div className="flex gap-2">
-                    {editIndex === index ? (
+                    {editIndex === habit.id ? (
                       <button
                         onClick={saveEdit}
                         className="text-green-500 hover:underline"
@@ -137,13 +148,13 @@ const App = () => {
                     ) : (
                       <>
                         <button
-                          onClick={() => handleEdit(index)}
+                          onClick={() => handleEdit(habit.id)}
                           className="text-blue-500 hover:underline"
                         >
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(index)}
+                          onClick={() => handleDelete(habit.id)}
                           className="text-red-500 hover:underline"
                         >
                           Delete
