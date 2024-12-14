@@ -1,120 +1,110 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Plus,
-  Zap,
-  Target,
-  Award,
-  TrendingUp,
-  Edit2,
-  Trash2,
   CheckCircle,
-  XCircle,
-  Filter,
-  BarChart2,
-  Calendar,
+  Zap,
+  Target as TargetIcon,
+  Moon,
+  Sun,
+  Brain,
+  Gift,
+  Rocket,
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
-// Color themes for different categories
-const CATEGORY_THEMES = {
-  Work: {
-    bg: "bg-blue-50",
-    border: "border-blue-300",
-    text: "text-blue-700",
-    icon: "text-blue-500",
+// Improved AI Habit Suggestions
+const AI_HABIT_SUGGESTIONS = [
+  {
+    id: 1,
+    name: "Mindful Meditation",
+    category: "Mindfulness",
+    description: "10-minute daily meditation practice",
+    difficulty: "Easy",
   },
-  Health: {
-    bg: "bg-green-50",
-    border: "border-green-300",
-    text: "text-green-700",
-    icon: "text-green-500",
+  {
+    id: 2,
+    name: "Skill Growth",
+    category: "Learning",
+    description: "Learn something new for 1 hour",
+    difficulty: "Medium",
   },
-  Fitness: {
-    bg: "bg-red-50",
-    border: "border-red-300",
-    text: "text-red-700",
-    icon: "text-red-500",
+  {
+    id: 3,
+    name: "Fitness Challenge",
+    category: "Fitness",
+    description: "30-minute workout or 10,000 steps",
+    difficulty: "Hard",
   },
-  Personal: {
-    bg: "bg-purple-50",
-    border: "border-purple-300",
-    text: "text-purple-700",
-    icon: "text-purple-500",
+];
+
+// Updated Achievements
+const ACHIEVEMENTS = [
+  {
+    id: "streak_master",
+    name: "Streak Master",
+    description: "Maintain a 30-day streak on any habit",
+    icon: <TargetIcon />,
+    requiredStreak: 30,
   },
-  Learning: {
-    bg: "bg-yellow-50",
-    border: "border-yellow-300",
-    text: "text-yellow-700",
-    icon: "text-yellow-500",
+  {
+    id: "multi_habit_hero",
+    name: "Multi-Habit Hero",
+    description: "Complete 5 different habits consistently",
+    icon: <Rocket />,
+    requiredHabitCount: 5,
   },
-  Finance: {
-    bg: "bg-green-50",
-    border: "border-green-300",
-    text: "text-green-700",
-    icon: "text-green-500",
-  },
-  Other: {
-    bg: "bg-gray-50",
-    border: "border-gray-300",
-    text: "text-gray-700",
-    icon: "text-gray-500",
-  },
-};
+];
+
+// Enhanced Categories
+const CATEGORIES = [
+  { name: "Work", icon: <Zap /> },
+  { name: "Health", icon: <Brain /> },
+  { name: "Fitness", icon: <Rocket /> },
+  { name: "Personal", icon: <Gift /> },
+  { name: "Learning", icon: <Sun /> },
+  { name: "Mindfulness", icon: <Moon /> },
+];
 
 const App = () => {
-  // Extended state management
+  // State Management
   const [habits, setHabits] = useState([]);
   const [input, setInput] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Personal");
-  const [editingHabit, setEditingHabit] = useState(null);
-  const [filter, setFilter] = useState({
-    category: null,
-    status: null,
-    sortBy: "newest",
-  });
+  const [darkMode, setDarkMode] = useState(false);
+  const [aiSuggestionOpen, setAiSuggestionOpen] = useState(false);
+  const [achievements, setAchievements] = useState([]);
 
-  // Extended categories
-  const categories = [
-    "Work",
-    "Health",
-    "Fitness",
-    "Personal",
-    "Learning",
-    "Finance",
-    "Creativity",
-    "Mindfulness",
-    "Other",
-  ];
+  // Achievement Tracking
+  const checkAchievements = useCallback(() => {
+    const newAchievements = ACHIEVEMENTS.filter((achievement) => {
+      // Streak Master
+      if (
+        achievement.id === "streak_master" &&
+        habits.some((h) => h.streak.longest >= achievement.requiredStreak)
+      ) {
+        return true;
+      }
 
-  // Advanced habit difficulty levels
-  const difficultyLevels = [
-    { name: "Easy", points: 10, color: "bg-green-200" },
-    { name: "Medium", points: 25, color: "bg-yellow-200" },
-    { name: "Hard", points: 50, color: "bg-red-200" },
-  ];
+      // Multi-Habit Hero
+      if (
+        achievement.id === "multi_habit_hero" &&
+        habits.filter((h) => h.streak.current > 0).length >=
+          achievement.requiredHabitCount
+      ) {
+        return true;
+      }
 
-  // Load habits from localStorage
-  useEffect(() => {
-    try {
-      const storedHabits = JSON.parse(
-        localStorage.getItem("advancedHabits") || "[]"
-      );
-      setHabits(storedHabits);
-    } catch (error) {
-      console.error("Failed to load habits:", error);
-    }
-  }, []);
+      return false;
+    });
 
-  // Save habits to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem("advancedHabits", JSON.stringify(habits));
-    } catch (error) {
-      console.error("Failed to save habits:", error);
-    }
+    setAchievements(newAchievements);
   }, [habits]);
 
-  // Advanced habit creation
+  useEffect(() => {
+    checkAchievements();
+  }, [habits, checkAchievements]);
+
+  // Create Habit
   const createHabit = () => {
     if (!input.trim()) return;
 
@@ -123,72 +113,53 @@ const App = () => {
       name: input,
       category: selectedCategory,
       createdAt: new Date().toISOString(),
-      difficulty: difficultyLevels[1], // Default to medium
       completions: [],
       streak: {
         current: 0,
         longest: 0,
       },
       totalPoints: 0,
-      goals: {
-        daily: 1,
-        weekly: 5,
-        monthly: 20,
-      },
-      notes: [],
-      archived: false,
     };
 
     setHabits((prev) => [...prev, newHabit]);
     setInput("");
   };
 
-  // Complex habit completion logic
-  const toggleHabitCompletion = (habitId) => {
+  // Add AI Habit Suggestion
+  const addAIHabitSuggestion = (suggestion) => {
+    const newHabit = {
+      id: uuidv4(),
+      name: suggestion.name,
+      category: suggestion.category,
+      createdAt: new Date().toISOString(),
+      completions: [],
+      streak: {
+        current: 0,
+        longest: 0,
+      },
+      totalPoints: 0,
+    };
+
+    setHabits((prev) => [...prev, newHabit]);
+    setAiSuggestionOpen(false);
+  };
+
+  // Complete Habit
+  const completeHabit = (habitId) => {
     const today = new Date().toISOString().split("T")[0];
 
     setHabits((prev) =>
       prev.map((habit) => {
         if (habit.id === habitId) {
-          const wasCompletedToday = habit.completions.some(
-            (c) => c.date === today
-          );
-
-          if (wasCompletedToday) {
-            // Undo completion
-            return {
-              ...habit,
-              completions: habit.completions.filter((c) => c.date !== today),
-              streak: {
-                ...habit.streak,
-                current: Math.max(0, habit.streak.current - 1),
-              },
-              totalPoints: Math.max(
-                0,
-                habit.totalPoints - habit.difficulty.points
-              ),
-            };
-          }
-
-          // Complete habit
-          const newCompletions = [
-            ...habit.completions,
-            {
-              date: today,
-              points: habit.difficulty.points,
-            },
-          ];
-
-          const newStreak = habit.streak.current + 1;
-
           return {
             ...habit,
-            completions: newCompletions,
+            completions: [...habit.completions, { date: today, points: 10 }],
             streak: {
-              current: newStreak,
-              longest: Math.max(newStreak, habit.streak.longest),
+              ...habit.streak,
+              current: habit.streak.current + 1,
+              longest: Math.max(habit.streak.current + 1, habit.streak.longest),
             },
-            totalPoints: habit.totalPoints + habit.difficulty.points,
+            totalPoints: habit.totalPoints + 10,
           };
         }
         return habit;
@@ -196,183 +167,226 @@ const App = () => {
     );
   };
 
-  // Advanced filtering and sorting
-  const filteredHabits = useMemo(() => {
-    return habits
-      .filter((habit) => {
-        // Category filter
-        if (filter.category && habit.category !== filter.category) return false;
-
-        // Status filter
-        if (filter.status === "completed" && habit.completions.length === 0)
-          return false;
-        if (filter.status === "pending" && habit.completions.length > 0)
-          return false;
-
-        return true;
-      })
-      .sort((a, b) => {
-        switch (filter.sortBy) {
-          case "newest":
-            return new Date(b.createdAt) - new Date(a.createdAt);
-          case "streak":
-            return b.streak.current - a.streak.current;
-          case "points":
-            return b.totalPoints - a.totalPoints;
-          default:
-            return 0;
-        }
-      });
-  }, [habits, filter]);
-
-  // Habit rendering with advanced UI
+  // Render Habit Card
   const renderHabitCard = (habit) => {
-    const theme = CATEGORY_THEMES[habit.category] || CATEGORY_THEMES.Other;
-    const today = new Date().toISOString().split("T")[0];
-    const completedToday = habit.completions.some((c) => c.date === today);
-
     return (
       <div
         key={habit.id}
         className={`
-          ${theme.bg} border-l-4 ${theme.border} 
-          rounded-lg p-4 mb-4 shadow-md 
-          transform transition-all duration-300 
-          hover:scale-[1.02] hover:shadow-lg
+          ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white"}
+          border rounded-lg p-4 mb-4 
+          shadow-md flex justify-between items-center
+          transition-all duration-300 
+          hover:shadow-lg
         `}
       >
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <div className={`${theme.icon}`}>
-              <Target size={24} />
-            </div>
-            <div>
-              <h3 className={`font-bold ${theme.text}`}>{habit.name}</h3>
-              <div className="text-sm text-gray-600 flex space-x-2">
-                <span>Streak: {habit.streak.current} 🔥</span>
-                <span>Points: {habit.totalPoints}</span>
-                <span
-                  className={`px-2 py-1 rounded text-xs ${habit.difficulty.color}`}
-                >
-                  {habit.difficulty.name}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => toggleHabitCompletion(habit.id)}
-              className={`
-                p-2 rounded-full transition-colors
-                ${
-                  completedToday
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-200 text-gray-600 hover:bg-green-100"
-                }
-              `}
-            >
-              {completedToday ? <CheckCircle /> : <Plus />}
-            </button>
+        <div>
+          <h3
+            className={`font-bold text-lg ${
+              darkMode ? "text-white" : "text-black"
+            }`}
+          >
+            {habit.name}
+          </h3>
+          <div
+            className={`text-sm ${
+              darkMode ? "text-gray-300" : "text-gray-600"
+            }`}
+          >
+            Streak: {habit.streak.current} 🔥 | Points: {habit.totalPoints}
           </div>
         </div>
+        <button
+          onClick={() => completeHabit(habit.id)}
+          className={`
+            p-2 rounded-full 
+            ${
+              darkMode
+                ? "bg-green-800 text-white hover:bg-green-700"
+                : "bg-green-500 text-white hover:bg-green-600"
+            }
+          `}
+        >
+          <CheckCircle />
+        </button>
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
-        <h1 className="text-4xl font-extrabold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-          HabitHive
-        </h1>
+    <div
+      className={`
+        min-h-screen transition-colors duration-300
+        ${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"}
+      `}
+    >
+      <div className="container mx-auto p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1
+            className={`text-4xl font-bold ${
+              darkMode ? "text-white" : "text-black"
+            }`}
+          >
+            HabitHive
+          </h1>
+          <div className="flex space-x-4">
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className={`
+                p-2 rounded-full
+                ${
+                  darkMode
+                    ? "bg-gray-700 text-yellow-300 hover:bg-gray-600"
+                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                }
+              `}
+            >
+              {darkMode ? <Sun /> : <Moon />}
+            </button>
+
+            {/* AI Suggestion Modal Trigger */}
+            <button
+              onClick={() => setAiSuggestionOpen(true)}
+              className={`
+                p-2 rounded-full
+                ${
+                  darkMode
+                    ? "bg-purple-800 text-white hover:bg-purple-700"
+                    : "bg-purple-500 text-white hover:bg-purple-600"
+                }
+              `}
+            >
+              <Brain />
+            </button>
+          </div>
+        </div>
+
+        {/* AI Habit Suggestions Modal */}
+        {aiSuggestionOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div
+              className={`
+              p-6 rounded-lg max-w-md w-full
+              ${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"}
+            `}
+            >
+              <h2 className="text-2xl font-bold mb-4">AI Habit Suggestions</h2>
+              {AI_HABIT_SUGGESTIONS.map((suggestion) => (
+                <div
+                  key={suggestion.name}
+                  className={`
+                    mb-4 p-4 rounded-lg cursor-pointer
+                    ${
+                      darkMode
+                        ? "hover:bg-gray-700 bg-gray-900"
+                        : "hover:bg-gray-100 bg-white"
+                    } border
+                  `}
+                  onClick={() => addAIHabitSuggestion(suggestion)}
+                >
+                  <h3 className="font-bold">{suggestion.name}</h3>
+                  <p className="text-sm text-gray-600">
+                    {suggestion.description}
+                  </p>
+                </div>
+              ))}
+              <button
+                onClick={() => setAiSuggestionOpen(false)}
+                className={`
+                  mt-4 p-2 rounded-lg w-full
+                  ${
+                    darkMode
+                      ? "bg-red-700 text-white hover:bg-red-600"
+                      : "bg-red-500 text-white hover:bg-red-600"
+                  }
+                `}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Achievements Section */}
+        {achievements.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold mb-4">Your Achievements</h2>
+            <div className="flex space-x-4">
+              {achievements.map((achievement) => (
+                <div
+                  key={achievement.id}
+                  className={`
+                    p-4 rounded-lg flex items-center
+                    ${
+                      darkMode
+                        ? "bg-gray-800 border border-gray-700"
+                        : "bg-yellow-100"
+                    }
+                  `}
+                >
+                  {achievement.icon}
+                  <div className="ml-4">
+                    <h3 className="font-bold">{achievement.name}</h3>
+                    <p className="text-sm">{achievement.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Habit Creation Section */}
-        <div className="mb-8 flex space-x-4">
+        <div className="mb-6 flex space-x-4">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Create a new habit..."
-            className="flex-grow p-3 border-2 border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className={`
+              flex-grow p-3 rounded-lg border
+              ${
+                darkMode
+                  ? "bg-gray-800 border-gray-700 text-white"
+                  : "bg-white border-gray-300"
+              }
+            `}
           />
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="p-3 border-2 border-blue-200 rounded-lg"
+            className={`
+              p-3 rounded-lg border
+              ${
+                darkMode
+                  ? "bg-gray-800 border-gray-700 text-white"
+                  : "bg-white border-gray-300"
+              }
+            `}
           >
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
+            {CATEGORIES.map((category) => (
+              <option key={category.name} value={category.name}>
+                {category.name}
               </option>
             ))}
           </select>
           <button
             onClick={createHabit}
-            className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors"
+            className={`
+              p-3 rounded-lg
+              ${
+                darkMode
+                  ? "bg-blue-800 text-white hover:bg-blue-700"
+                  : "bg-blue-500 text-white hover:bg-blue-600"
+              }
+            `}
           >
             <Plus />
           </button>
         </div>
 
-        {/* Filtering and Sorting */}
-        <div className="mb-8 flex justify-between items-center">
-          <div className="flex space-x-2">
-            {/* Category Filter */}
-            <select
-              value={filter.category || ""}
-              onChange={(e) =>
-                setFilter((prev) => ({
-                  ...prev,
-                  category: e.target.value || null,
-                }))
-              }
-              className="p-2 border rounded"
-            >
-              <option value="">All Categories</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-
-            {/* Status Filter */}
-            <select
-              value={filter.status || ""}
-              onChange={(e) =>
-                setFilter((prev) => ({
-                  ...prev,
-                  status: e.target.value || null,
-                }))
-              }
-              className="p-2 border rounded"
-            >
-              <option value="">All Status</option>
-              <option value="completed">Completed</option>
-              <option value="pending">Pending</option>
-            </select>
-
-            {/* Sort By */}
-            <select
-              value={filter.sortBy}
-              onChange={(e) =>
-                setFilter((prev) => ({
-                  ...prev,
-                  sortBy: e.target.value,
-                }))
-              }
-              className="p-2 border rounded"
-            >
-              <option value="newest">Newest</option>
-              <option value="streak">Highest Streak</option>
-              <option value="points">Most Points</option>
-            </select>
-          </div>
-        </div>
-
         {/* Habits List */}
-        <div className="space-y-4">{filteredHabits.map(renderHabitCard)}</div>
+        <div className="space-y-4">{habits.map(renderHabitCard)}</div>
       </div>
     </div>
   );
